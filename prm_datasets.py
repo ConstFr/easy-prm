@@ -4,6 +4,10 @@ from torch.utils.data import Dataset
 from copy import deepcopy
 
 
+STEP_SEP = "[STEP_SEP]"
+QUES_SEP = "[QUES_SEP]"
+
+
 def merge_dicts(dict_list):
     merged_dict = deepcopy(dict_list[0])
     for d in dict_list[1:]:
@@ -46,7 +50,7 @@ def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-1
  
 
     for i,step in enumerate(data['steps']):
-        cot_step = f'{step} \n\n\n\n'
+        cot_step = f'{step} {STEP_SEP}'
 
   
         label = 1 if labels[i] == 1 else 0
@@ -67,7 +71,7 @@ def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-1
         for aug in data['augs']:
             aug_idx = aug['aug_idx']
             aug_step_content = aug['aug_step']
-            aug_step = f'{aug_step_content} \n\n\n\n'
+            aug_step = f'{aug_step_content} {STEP_SEP}'
 
 
             # all augments are incorrect step, except those of type 1 (good) or 0 (okay)
@@ -103,7 +107,7 @@ def tokenize_one_question(data, tokenizer, label_mask_token_id=-100, label_last_
 
     question = data['question']
 
-    question_tokenized = tokenizer(f'{question} \n\n')
+    question_tokenized = tokenizer(f'{question} {QUES_SEP}')
 
     # we don't want to do token classification on the question and choices part of tokenized
     question_tokenized['labels'] = [label_mask_token_id] * len(question_tokenized.input_ids)

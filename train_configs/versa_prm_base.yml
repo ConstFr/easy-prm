@@ -5,7 +5,7 @@ max_length: 750
 use_augs: false
 train_label_last_n: 1
 eval_label_last_n: 1
-wandb_project: 'prm_train'
+wandb_project: 'llama_prm_train'
 lora_config:
   r: 16
   lora_alpha: 32  
@@ -13,23 +13,24 @@ lora_config:
   target_modules: 'all-linear'
   task_type: 'CAUSAL_LM'
 training_args:
-  output_dir: './runs/versa_prm_base'
+  output_dir: './runs/llama_prm_base_1'
+  report_to: "wandb"
   learning_rate: 1.0e-4
   gradient_accumulation_steps: 2
   eval_accumulation_steps: 3
   lr_scheduler_type: 'cosine' 
   warmup_ratio: 0.1
   bf16: true
-  per_device_train_batch_size: 4 # we have four devices
+  per_device_train_batch_size: 1 # we have four devices
   num_train_epochs: 1
   weight_decay: 0.01
   eval_strategy: 'no'
   logging_steps: 1
   save_strategy: 'steps'
   save_steps: 500
-  save_total_limit: 1
+  save_total_limit: 1 
   load_best_model_at_end: false
-  push_to_hub: true
+  push_to_hub: false
   hub_strategy: 'checkpoint'
   seed: 908932403
   data_seed: 289245

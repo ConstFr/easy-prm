@@ -29,9 +29,14 @@ def main(configs):
 
     ### Prepare Model and Tokenizer ###
     print('Preparing Model and Tokenizer')
+    print(os.getenv("HF_HOME"))
 
-    model = get_model(configs)
-    tokenizer = get_tokenizer(configs.model_id)
+    if 'deberta' in configs.model_id:
+        tokenizer = get_tokenizer_bert(configs.model_id)
+        model = get_model_bert(configs, tokenizer)
+    else:
+        model = get_model(configs)
+        tokenizer = get_tokenizer(configs.model_id)
 
 
 
@@ -43,13 +48,17 @@ def main(configs):
 
 
     ### Get custom loss objective and metrics ###
-    prm_compute_loss_func = get_compute_loss_func()
-    prm_compute_metrics = get_compute_metrics()
+    if 'deberta' in configs.model_id:
+        prm_compute_loss_func = get_compute_loss_func_bert()
+        prm_compute_metrics = get_compute_metrics_bert()
+    else:
+        prm_compute_loss_func = get_compute_loss_func()
+        prm_compute_metrics = get_compute_metrics()
     
     ### training loop ###
 
     training_args = TrainingArguments(**configs.training_args)
-
+    print('Training loop started')
     trainer = Trainer(
         model,
         training_args,
@@ -71,8 +80,9 @@ def main(configs):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Training script for traing Llama PRM')
+    parser = argparse.ArgumentParser(description='Training script for training PRM models')
     parser.add_argument('-c','--config', type=str, help='Path to config json', default='./train_configs/llama_prm800k.yml')
+    parser.add_argument('--local_rank', type=int, default=-1, help='Used by torch.distributed.launch/torchrun')
     args = parser.parse_args()
 
     with open(args.config) as stream:
@@ -83,4 +93,3 @@ if __name__ == '__main__':
 
     
     main(configs)
-
