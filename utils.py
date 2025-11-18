@@ -179,10 +179,11 @@ def get_tokenizer_bert(model_id):
 #     return tokenizer
 
 
-def get_datasets(configs, tokenizer):
+def get_datasets(configs, tokenizer, model_type="llama"):
     
     t_dataset = TokenizedPRMDataset(configs.train_data_path, 
                                     tokenizer,
+                                    model_type=model_type,
                                     label_last_n = configs.train_label_last_n if 'train_label_last_n' in configs else None,
                                     max_length=configs.max_length if 'max_length' in configs else None,
                                     use_augs=configs.use_augs if 'use_augs' in configs else True)
@@ -194,18 +195,23 @@ def get_datasets(configs, tokenizer):
     return t_dataset, e_dataset
 
 
-def get_datasets_llama(configs, tokenizer):
+def get_datasets_llama(configs, tokenizer, model_type="llama"):
     
-    t_dataset = TokenizedPRMDataset(configs.train_data_path, 
-                                    tokenizer,
-                                    label_last_n = configs.train_label_last_n if 'train_label_last_n' in configs else None,
-                                    max_length=configs.max_length if 'max_length' in configs else None,
-                                    use_augs=configs.use_augs if 'use_augs' in configs else True)
-    e_dataset = TokenizedPRREvalDataset(configs.eval_data_path, 
-                                    tokenizer,
-                                    max_length=configs.max_length if 'max_length' in configs else None,
-                                    num_samples=configs.eval_num_samples if 'eval_num_samples' in configs else 500
-                                    )
+    t_dataset = TokenizedPRMDataset(
+        configs.train_data_path, 
+        tokenizer,
+        model_type=model_type,
+        label_last_n = configs.train_label_last_n if 'train_label_last_n' in configs else None,
+        max_length=configs.max_length if 'max_length' in configs else None,
+        use_augs=configs.use_augs if 'use_augs' in configs else True
+    )
+    e_dataset = TokenizedPRREvalDataset(
+        configs.eval_data_path, 
+        tokenizer,
+        model_type=model_type,
+        max_length=configs.max_length if 'max_length' in configs else None,
+        num_samples=configs.eval_num_samples if 'eval_num_samples' in configs else 500
+    )
     return t_dataset, e_dataset
 
 

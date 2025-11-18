@@ -4,12 +4,6 @@ from torch.utils.data import Dataset
 from copy import deepcopy
 
 
-# STEP_SEP = "[STEP_SEP]"
-# QUES_SEP = "[QUES_SEP]"
-STEP_SEP = "\n\n\n\n"
-QUES_SEP = "\n\n"
-
-
 def merge_dicts(dict_list):
     merged_dict = deepcopy(dict_list[0])
     for d in dict_list[1:]:
@@ -34,7 +28,17 @@ def tokenize_step(cot_step, label, tokenizer, label_mask_token_id=-100, label_la
     return cot_step_tokenized
 
 
-def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-100, label_last_n=None, max_length=None, use_augs=True):
+def tokenize_one_cot(
+        question_tokenized, 
+        data, 
+        tokenizer, 
+        label_mask_token_id=-100, 
+        label_last_n=None, 
+        max_length=None, 
+        use_augs=True,
+        step_sep="\n\n\n\n", 
+        ques_sep="\n\n"
+    ):
 
     if 'labels' not in data:
         return []
@@ -53,7 +57,7 @@ def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-1
  
 
     for i,step in enumerate(data['steps']):
-        cot_step = f'{step} {STEP_SEP}'
+        cot_step = f'{step} {step_sep}'
 
   
         label = 1 if labels[i] == 1 else 0
@@ -74,7 +78,7 @@ def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-1
         for aug in data['augs']:
             aug_idx = aug['aug_idx']
             aug_step_content = aug['aug_step']
-            aug_step = f'{aug_step_content} {STEP_SEP}'
+            aug_step = f'{aug_step_content} {step_sep}'
 
 
             # all augments are incorrect step, except those of type 1 (good) or 0 (okay)
@@ -104,14 +108,23 @@ def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-1
     return tokenized
 
 
-def tokenize_one_question(data, tokenizer, label_mask_token_id=-100, label_last_n=None, max_length=None, use_augs=True):
+def tokenize_one_question(
+        data, 
+        tokenizer, 
+        label_mask_token_id=-100, 
+        label_last_n=None, 
+        max_length=None, 
+        use_augs=True, 
+        step_sep="\n\n\n\n", 
+        ques_sep="\n\n"
+    ):
     '''
     can add aug_type param to specify which type of augmentation to use
     '''
 
     question = data['question']
 
-    question_tokenized = tokenizer(f'{question} {QUES_SEP}')
+    question_tokenized = tokenizer(f'{question} {ques_sep}')
 
     # we don't want to do token classification on the question and choices part of tokenized
     question_tokenized['labels'] = [label_mask_token_id] * len(question_tokenized.input_ids)
@@ -120,7 +133,19 @@ def tokenize_one_question(data, tokenizer, label_mask_token_id=-100, label_last_
     tokenized = []
 
     for cot in data['chain_of_thoughts']:
-        tokenized.extend(tokenize_one_cot(question_tokenized, cot, tokenizer, label_mask_token_id, label_last_n, max_length, use_augs))
+        tokenized.extend(
+            tokenize_one_cot(
+                question_tokenized, 
+                cot, 
+                tokenizer, 
+                label_mask_token_id, 
+                label_last_n, 
+                max_length, 
+                use_augs,
+                step_sep,
+                ques_sep,
+            )
+        )
     
     return tokenized
 
@@ -140,7 +165,16 @@ def read_json(d):
     return text_data
 
 
-def tokenize_data(data_path, tokenizer, label_mask_token_id=-100, label_last_n=None, max_length=None, use_augs=True):
+def tokenize_data(
+        data_path, 
+        tokenizer, 
+        label_mask_token_id=-100, 
+        label_last_n=None, 
+        max_length=None, 
+        use_augs=True, 
+        step_sep="\n\n\n\n", 
+        ques_sep="\n\n"
+    ):
     '''
     reads in file from data_path and tokenizes it into PRM format
 
@@ -162,12 +196,18 @@ def tokenize_data(data_path, tokenizer, label_mask_token_id=-100, label_last_n=N
     tokenize_data = []
 
     for d in tqdm(text_data):
-        tokenize_data.extend(tokenize_one_question(d, 
-                                                   tokenizer, 
-                                                   label_mask_token_id=label_mask_token_id, 
-                                                   label_last_n=label_last_n,
-                                                   max_length=max_length,
-                                                   use_augs=use_augs))
+        tokenize_data.extend(
+            tokenize_one_question(
+                d, 
+                tokenizer, 
+                label_mask_token_id=label_mask_token_id, 
+                label_last_n=label_last_n,
+                max_length=max_length,
+                use_augs=use_augs,
+                step_sep=step_sep,
+                ques_sep=ques_sep,
+                )
+        )
 
     return tokenize_data
 
@@ -180,6 +220,7 @@ class TokenizedPRMDataset(Dataset):
     def __init__(self,  
                  data_path, 
                  tokenizer, 
+                 model_type="llama",
                  label_mask_token_id=-100,
                  label_last_n=None,
                  max_length=None,
@@ -188,12 +229,23 @@ class TokenizedPRMDataset(Dataset):
 
         super(TokenizedPRMDataset, self).__init__()
         
-        self.tokenized_data = tokenize_data(data_path= data_path, 
-                                            tokenizer =tokenizer, 
-                                            label_mask_token_id=label_mask_token_id, 
-                                            label_last_n=label_last_n, 
-                                            max_length=max_length, 
-                                            use_augs=use_augs)
+        if model_type == "deberta":
+            STEP_SEP = "[STEP_SEP]"
+            QUES_SEP = "[QUES_SEP]"
+        else:
+            STEP_SEP = "\n\n\n\n"
+            QUES_SEP = "\n\n"
+
+        self.tokenized_data = tokenize_data(
+            data_path=data_path, 
+            tokenizer=tokenizer, 
+            label_mask_token_id=label_mask_token_id, 
+            label_last_n=label_last_n, 
+            max_length=max_length, 
+            use_augs=use_augs,
+            step_sep=STEP_SEP,
+            ques_sep=QUES_SEP,
+        )
         
 
     def __len__(self):

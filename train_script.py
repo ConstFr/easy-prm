@@ -38,9 +38,9 @@ def main(configs):
 
         ### Prepare data ###
         print('Preparing and tokenizing data')
-        t_dataset, e_dataset = get_datasets_llama(configs, tokenizer)
+        t_dataset, e_dataset = get_datasets_llama(configs, tokenizer, model_type="llama")
 
-        collate_fn  =  get_collate_func(tokenizer)
+        collate_fn = get_collate_func(tokenizer)
 
 
         ### Get custom loss objective and metrics ###
@@ -84,7 +84,7 @@ def main(configs):
 
         ### Prepare data ###
         print('Preparing and tokenizing data')
-        t_dataset, e_dataset = get_datasets(configs, tokenizer)
+        t_dataset, e_dataset = get_datasets(configs, tokenizer, model_type="deberta")
 
         collate_fn  =  get_collate_func(tokenizer)
 
@@ -131,7 +131,7 @@ def main(configs):
 
         ### Prepare data ###
         print('Preparing and tokenizing data')
-        t_dataset, e_dataset = get_datasets(configs, tokenizer)
+        t_dataset, e_dataset = get_datasets(configs, tokenizer, model_type="llama")
 
         collate_fn  =  get_collate_func(tokenizer)
 
