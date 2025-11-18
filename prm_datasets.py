@@ -4,8 +4,10 @@ from torch.utils.data import Dataset
 from copy import deepcopy
 
 
-STEP_SEP = "[STEP_SEP]"
-QUES_SEP = "[QUES_SEP]"
+# STEP_SEP = "[STEP_SEP]"
+# QUES_SEP = "[QUES_SEP]"
+STEP_SEP = "\n\n\n\n"
+QUES_SEP = "\n\n"
 
 
 def merge_dicts(dict_list):
@@ -14,6 +16,7 @@ def merge_dicts(dict_list):
         for key, value in d.items():
             merged_dict[key].extend(value)
     return merged_dict
+
 
 def tokenize_step(cot_step, label, tokenizer, label_mask_token_id=-100, label_last_n=None):
     cot_step_tokenized = tokenizer(cot_step, add_special_tokens=False)
@@ -100,6 +103,7 @@ def tokenize_one_cot(question_tokenized, data, tokenizer, label_mask_token_id=-1
 
     return tokenized
 
+
 def tokenize_one_question(data, tokenizer, label_mask_token_id=-100, label_last_n=None, max_length=None, use_augs=True):
     '''
     can add aug_type param to specify which type of augmentation to use
@@ -135,6 +139,7 @@ def read_json(d):
     
     return text_data
 
+
 def tokenize_data(data_path, tokenizer, label_mask_token_id=-100, label_last_n=None, max_length=None, use_augs=True):
     '''
     reads in file from data_path and tokenizes it into PRM format
@@ -166,6 +171,7 @@ def tokenize_data(data_path, tokenizer, label_mask_token_id=-100, label_last_n=N
 
     return tokenize_data
 
+
 class TokenizedPRMDataset(Dataset):
     '''
     Tokenized PRM dataset
@@ -181,8 +187,6 @@ class TokenizedPRMDataset(Dataset):
               ):
 
         super(TokenizedPRMDataset, self).__init__()
-
-
         
         self.tokenized_data = tokenize_data(data_path= data_path, 
                                             tokenizer =tokenizer, 

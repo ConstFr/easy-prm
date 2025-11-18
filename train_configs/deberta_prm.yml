@@ -1,3 +1,4 @@
+type: 'deberta'
 model_id: 'microsoft/deberta-v3-large'
 train_data_path: './data/mmlu_auged.json'
 eval_data_path: './data/subsets/mmlu_small_auged_eval_16.json'

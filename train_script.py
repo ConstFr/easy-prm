@@ -21,60 +21,145 @@ ProgressCallback.on_log = on_log
 
 
 def main(configs):
+    if configs.type == 'llama':
+        # set wandb project in which to store logs
+        if 'wandb_project' in configs:
+            os.environ['WANDB_PROJECT'] = configs.wandb_project
 
-    # set wandb project in which to store logs
-    if 'wandb_project' in configs:
-        os.environ['WANDB_PROJECT'] = configs.wandb_project
 
+        ### Prepare Model and Tokenizer ###
+        print('Preparing Model and Tokenizer')
+        print(os.getenv("HF_HOME"))
 
-    ### Prepare Model and Tokenizer ###
-    print('Preparing Model and Tokenizer')
-    print(os.getenv("HF_HOME"))
-
-    if 'deberta' in configs.model_id:
-        tokenizer = get_tokenizer_bert(configs.model_id)
-        model = get_model_bert(configs, tokenizer)
-    else:
         model = get_model(configs)
         tokenizer = get_tokenizer(configs.model_id)
 
 
 
-    ### Prepare data ###
-    print('Preparing and tokenizing data')
-    t_dataset, e_dataset = get_datasets(configs, tokenizer)
+        ### Prepare data ###
+        print('Preparing and tokenizing data')
+        t_dataset, e_dataset = get_datasets_llama(configs, tokenizer)
 
-    collate_fn  =  get_collate_func(tokenizer)
+        collate_fn  =  get_collate_func(tokenizer)
 
 
-    ### Get custom loss objective and metrics ###
-    if 'deberta' in configs.model_id:
+        ### Get custom loss objective and metrics ###
+        prm_compute_loss_func = get_compute_loss_func()
+        prm_compute_metrics = get_compute_metrics_llama()
+        
+        ### training loop ###
+
+        training_args = TrainingArguments(label_names=["labels", "accuracy"], **configs.training_args)
+        print('Training loop started')
+        trainer = Trainer(
+            model,
+            training_args,
+            train_dataset=t_dataset,
+            eval_dataset=e_dataset,
+            data_collator=collate_fn,
+            processing_class=tokenizer,
+            compute_loss_func=prm_compute_loss_func,
+            compute_metrics=prm_compute_metrics,
+        )
+
+        # train
+        checkpoint = None
+        if 'resume_from_checkpoint' in configs:
+            checkpoint = configs.resume_from_checkpoint
+        trainer.train(resume_from_checkpoint=checkpoint)
+    
+    if configs.type == 'deberta':
+        # set wandb project in which to store logs
+        if 'wandb_project' in configs:
+            os.environ['WANDB_PROJECT'] = configs.wandb_project
+
+
+        ### Prepare Model and Tokenizer ###
+        print('Preparing Model and Tokenizer')
+        print(os.getenv("HF_HOME"))
+
+        tokenizer = get_tokenizer_bert(configs.model_id)
+        model = get_model_bert(configs, tokenizer)
+
+
+        ### Prepare data ###
+        print('Preparing and tokenizing data')
+        t_dataset, e_dataset = get_datasets(configs, tokenizer)
+
+        collate_fn  =  get_collate_func(tokenizer)
+
+
+        ### Get custom loss objective and metrics ###
         prm_compute_loss_func = get_compute_loss_func_bert()
         prm_compute_metrics = get_compute_metrics_bert()
-    else:
+        
+        ### training loop ###
+
+        training_args = TrainingArguments(**configs.training_args)
+        print('Training loop started')
+        trainer = Trainer(
+            model,
+            training_args,
+            train_dataset=t_dataset,
+            eval_dataset=e_dataset,
+            data_collator=collate_fn,
+            processing_class=tokenizer,
+            compute_loss_func=prm_compute_loss_func,
+            compute_metrics=prm_compute_metrics
+        )
+        # train
+        checkpoint = None
+        if 'resume_from_checkpoint' in configs:
+            checkpoint = configs.resume_from_checkpoint
+        trainer.train(resume_from_checkpoint=checkpoint)
+    
+    if configs.type == 'default':
+
+        # set wandb project in which to store logs
+        if 'wandb_project' in configs:
+            os.environ['WANDB_PROJECT'] = configs.wandb_project
+
+
+        ### Prepare Model and Tokenizer ###
+        print('Preparing Model and Tokenizer')
+        print(os.getenv("HF_HOME"))
+
+        model = get_model(configs)
+        tokenizer = get_tokenizer(configs.model_id)
+
+
+
+        ### Prepare data ###
+        print('Preparing and tokenizing data')
+        t_dataset, e_dataset = get_datasets(configs, tokenizer)
+
+        collate_fn  =  get_collate_func(tokenizer)
+
+
+        ### Get custom loss objective and metrics ###
         prm_compute_loss_func = get_compute_loss_func()
         prm_compute_metrics = get_compute_metrics()
-    
-    ### training loop ###
+        
+        ### training loop ###
 
-    training_args = TrainingArguments(**configs.training_args)
-    print('Training loop started')
-    trainer = Trainer(
-        model,
-        training_args,
-        train_dataset=t_dataset,
-        eval_dataset=e_dataset,
-        data_collator=collate_fn,
-        processing_class=tokenizer,
-        compute_loss_func=prm_compute_loss_func,
-        compute_metrics=prm_compute_metrics
-    )
+        training_args = TrainingArguments(**configs.training_args)
+        print('Training loop started')
+        trainer = Trainer(
+            model,
+            training_args,
+            train_dataset=t_dataset,
+            eval_dataset=e_dataset,
+            data_collator=collate_fn,
+            processing_class=tokenizer,
+            compute_loss_func=prm_compute_loss_func,
+            compute_metrics=prm_compute_metrics
+        )
 
-    # train
-    checkpoint = None
-    if 'resume_from_checkpoint' in configs:
-        checkpoint = configs.resume_from_checkpoint
-    trainer.train(resume_from_checkpoint=checkpoint)
+        # train
+        checkpoint = None
+        if 'resume_from_checkpoint' in configs:
+            checkpoint = configs.resume_from_checkpoint
+        trainer.train(resume_from_checkpoint=checkpoint)
 
 
 
